@@ -19,16 +19,19 @@ export default function ProjectFilters({
 }) {
   const [active, setActive] = useState("All");
 
-  const categories = [
-    "All",
-    ...Array.from(
-      new Set(
-        projects
-          .map((project) => project.category)
-          .filter(Boolean)
-      )
-    ),
-  ];
+const categories = [
+  "All",
+  ...Array.from(
+    new Set(
+      projects
+        .map((project) => project.category)
+        .filter(
+          (category): category is string =>
+            Boolean(category)
+        )
+    )
+  ),
+];
 
   const filteredProjects =
     active === "All"
