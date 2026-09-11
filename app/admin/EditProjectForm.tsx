@@ -9,8 +9,8 @@ type Project = {
   description: string | null;
   live_url: string;
   github_url: string | null;
-  category: string | null;
   image_url: string | null;
+  display_order: number;
 };
 
 type EditProjectFormProps = {
@@ -32,9 +32,6 @@ export default function EditProjectForm({
   const [githubUrl, setGithubUrl] = useState(
     project.github_url || ""
   );
-  const [category, setCategory] = useState(
-    project.category || ""
-  );
 
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -42,15 +39,24 @@ export default function EditProjectForm({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
+    if (!title.trim()) {
+      setErrorMessage("Please enter a project title.");
+      return;
+    }
+
+    if (!liveUrl.trim()) {
+      setErrorMessage("Please enter the live project URL.");
+      return;
+    }
+
     setSaving(true);
     setErrorMessage("");
 
     const updatedProject = {
-      title,
-      description: description || null,
-      live_url: liveUrl,
-      github_url: githubUrl || null,
-      category: category || null,
+      title: title.trim(),
+      description: description.trim() || null,
+      live_url: liveUrl.trim(),
+      github_url: githubUrl.trim() || null,
     };
 
     const { data, error } = await supabaseBrowser
@@ -74,46 +80,34 @@ export default function EditProjectForm({
   }
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center overflow-y-auto bg-slate-950/75 px-4 py-6 backdrop-blur-md">
-
-      {/* Modal */}
-      <div className="glass blue-glow relative w-full max-w-2xl rounded-3xl shadow-2xl">
-
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/70 px-5 py-10 backdrop-blur-md">
+      <div className="glass w-full max-w-2xl rounded-3xl p-6 shadow-2xl sm:p-8">
         {/* Header */}
-        <div className="flex items-start justify-between gap-4 border-b border-blue-400/10 p-6 sm:p-8">
-
+        <div className="mb-8 flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-medium uppercase tracking-[0.25em] text-blue-400">
-              Project Manager
+            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.25em] text-blue-400">
+              Edit Project
             </p>
 
-            <h2 className="mt-2 text-2xl font-bold tracking-tight text-white">
-              Edit Project
+            <h2 className="text-2xl font-bold text-white">
+              Update Project
             </h2>
 
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-2 text-sm text-slate-500">
               Update your project details.
             </p>
           </div>
 
-          {/* Close */}
           <button
             type="button"
             onClick={onClose}
-            disabled={saving}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-700/70 bg-slate-900/50 text-lg text-slate-400 transition hover:border-blue-400/30 hover:bg-blue-500/10 hover:text-white disabled:opacity-50"
+            className="rounded-xl border border-slate-700 bg-slate-900/50 px-3 py-2 text-slate-400 transition hover:border-slate-600 hover:text-white"
           >
-            ×
+            ✕
           </button>
-
         </div>
 
-        {/* Form */}
-        <form
-          onSubmit={handleSubmit}
-          className="space-y-5 p-6 sm:p-8"
-        >
-
+        <form onSubmit={handleSubmit} className="space-y-5">
           {/* Title */}
           <div>
             <label className="mb-2 block text-sm font-medium text-slate-300">
@@ -124,23 +118,8 @@ export default function EditProjectForm({
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              className="admin-input"
               required
-              className="admin-input"
-            />
-          </div>
-
-          {/* Category */}
-          <div>
-            <label className="mb-2 block text-sm font-medium text-slate-300">
-              Category
-            </label>
-
-            <input
-              type="text"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              placeholder="e.g. Web App, AI, Hackathon"
-              className="admin-input"
             />
           </div>
 
@@ -152,9 +131,7 @@ export default function EditProjectForm({
 
             <textarea
               value={description}
-              onChange={(e) =>
-                setDescription(e.target.value)
-              }
+              onChange={(e) => setDescription(e.target.value)}
               rows={5}
               className="admin-input resize-none"
             />
@@ -163,52 +140,47 @@ export default function EditProjectForm({
           {/* Live URL */}
           <div>
             <label className="mb-2 block text-sm font-medium text-slate-300">
-              Live Website URL
+              Live Project URL
             </label>
 
             <input
               type="url"
               value={liveUrl}
               onChange={(e) => setLiveUrl(e.target.value)}
-              required
               className="admin-input"
+              required
             />
           </div>
 
-          {/* GitHub */}
+          {/* GitHub URL */}
           <div>
             <label className="mb-2 block text-sm font-medium text-slate-300">
-              GitHub URL
-              <span className="ml-2 text-xs text-slate-600">
-                Optional
-              </span>
+              GitHub URL{" "}
+              <span className="text-slate-600">(optional)</span>
             </label>
 
             <input
               type="url"
               value={githubUrl}
-              onChange={(e) =>
-                setGithubUrl(e.target.value)
-              }
+              onChange={(e) => setGithubUrl(e.target.value)}
               className="admin-input"
             />
           </div>
 
           {/* Error */}
           {errorMessage && (
-            <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+            <div className="rounded-xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
               {errorMessage}
             </div>
           )}
 
           {/* Buttons */}
-          <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
-
+          <div className="flex gap-3 pt-2">
             <button
               type="button"
               onClick={onClose}
               disabled={saving}
-              className="rounded-xl border border-slate-700/80 bg-slate-900/50 px-5 py-3 text-sm font-medium text-slate-300 transition hover:border-slate-600 hover:text-white disabled:opacity-50"
+              className="flex-1 rounded-xl border border-slate-700 bg-slate-900/50 px-5 py-3.5 font-medium text-slate-300 transition hover:border-slate-600 hover:text-white disabled:opacity-50"
             >
               Cancel
             </button>
@@ -216,15 +188,12 @@ export default function EditProjectForm({
             <button
               type="submit"
               disabled={saving}
-              className="rounded-xl bg-blue-500 px-6 py-3 text-sm font-semibold text-white shadow-[0_0_35px_rgba(59,130,246,0.2)] transition hover:bg-blue-400 hover:shadow-[0_0_55px_rgba(59,130,246,0.3)] disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex-1 rounded-xl border border-blue-400/30 bg-blue-600/20 px-5 py-3.5 font-semibold text-blue-200 transition hover:-translate-y-0.5 hover:border-blue-300/60 hover:bg-blue-600/30 hover:text-white hover:shadow-[0_0_30px_rgba(37,99,235,0.2)] disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {saving ? "Saving Changes..." : "Save Changes →"}
+              {saving ? "Saving..." : "Save Changes →"}
             </button>
-
           </div>
-
         </form>
-
       </div>
     </div>
   );

@@ -1,7 +1,5 @@
 "use client";
 
-import { useState } from "react";
-
 type Project = {
   id: string;
   title: string;
@@ -9,7 +7,7 @@ type Project = {
   image_url: string | null;
   live_url: string;
   github_url: string | null;
-  category: string | null;
+  display_order: number;
 };
 
 export default function ProjectFilters({
@@ -17,189 +15,97 @@ export default function ProjectFilters({
 }: {
   projects: Project[];
 }) {
-  const [active, setActive] = useState("All");
-
-  const categories = [
-    "All",
-    ...Array.from(
-      new Set(
-        projects
-          .map((project) => project.category)
-          .filter(
-            (category): category is string =>
-              Boolean(category)
-          )
-      )
-    ),
-  ];
-
-  const filteredProjects =
-    active === "All"
-      ? projects
-      : projects.filter(
-          (project) => project.category === active
-        );
-
   return (
-    <>
-      {/* FILTERS */}
-      <div className="mb-10 flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-        {categories.map((category) => (
-          <button
-            key={category}
-            onClick={() => setActive(category)}
-            className={`whitespace-nowrap rounded-full px-5 py-2.5 text-sm transition ${
-              active === category
-                ? "bg-blue-500 text-white shadow-[0_0_25px_rgba(59,130,246,0.25)]"
-                : "glass text-slate-400 hover:text-white"
-            }`}
+    <div className="space-y-6">
+      {projects.length === 0 ? (
+        <div className="glass rounded-3xl p-10 text-center">
+          <div className="mb-4 text-4xl">✦</div>
+
+          <h3 className="text-xl font-semibold text-white">
+            Projects coming soon
+          </h3>
+
+          <p className="mt-2 text-sm text-slate-500">
+            I'm currently building and shipping new ideas.
+          </p>
+        </div>
+      ) : (
+        projects.map((project, index) => (
+          <article
+            key={project.id}
+            className="glass glass-hover group overflow-hidden rounded-3xl"
           >
-            {category}
-          </button>
-        ))}
-      </div>
+            <div className="grid md:grid-cols-[0.9fr_1.1fr]">
+              {/* Project Visual */}
+              <div className="relative flex min-h-[240px] items-center justify-center overflow-hidden border-b border-white/5 bg-slate-950/50 md:min-h-[300px] md:border-b-0 md:border-r">
+                {/* Blue ambient glow */}
+                <div className="absolute h-48 w-48 rounded-full bg-blue-600/20 blur-[90px] transition duration-500 group-hover:bg-blue-500/30" />
 
-      {/* PROJECTS */}
-      {filteredProjects.length > 0 ? (
-        <div className="grid gap-6 md:grid-cols-2">
+                {/* Grid */}
+                <div className="absolute inset-0 opacity-40 grid-background" />
 
-          {filteredProjects.map((project, index) => (
-            <article
-              key={project.id}
-              className={`glass glass-hover group overflow-hidden rounded-3xl ${
-                index === 0 ? "md:col-span-2" : ""
-              }`}
-            >
+                {/* Decorative lines */}
+                <div className="absolute left-8 top-8 h-20 w-20 border-l border-t border-blue-400/20" />
+                <div className="absolute bottom-8 right-8 h-20 w-20 border-b border-r border-blue-400/20" />
 
-              {/* PROJECT VISUAL */}
-              <div
-                className={`relative overflow-hidden bg-slate-950 ${
-                  index === 0
-                    ? "aspect-[2/1]"
-                    : "aspect-video"
-                }`}
-              >
-
-                {/* Ambient glow */}
-                <div className="absolute left-1/2 top-1/2 h-56 w-56 -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-600/20 blur-[90px] transition duration-700 group-hover:bg-blue-500/30" />
-
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.12),transparent_60%)]" />
-
-                {/* Decorative grid */}
-                <div className="absolute inset-0 opacity-30">
-                  <div
-                    className="h-full w-full"
-                    style={{
-                      backgroundImage:
-                        "linear-gradient(rgba(59,130,246,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(59,130,246,0.08) 1px, transparent 1px)",
-                      backgroundSize: "40px 40px",
-                    }}
-                  />
-                </div>
-
-                {/* Center project identity */}
-                <div className="relative flex h-full flex-col items-center justify-center px-6 text-center">
-
-                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-blue-400/20 bg-blue-500/10 text-2xl text-blue-300 shadow-[0_0_35px_rgba(37,99,235,0.15)] transition duration-500 group-hover:scale-110 group-hover:border-blue-400/40">
+                {/* Center visual */}
+                <div className="relative flex flex-col items-center">
+                  <div className="flex h-20 w-20 items-center justify-center rounded-2xl border border-blue-400/20 bg-blue-500/10 text-3xl text-blue-300 shadow-[0_0_40px_rgba(37,99,235,0.15)] transition duration-500 group-hover:scale-110 group-hover:border-blue-300/40 group-hover:shadow-[0_0_60px_rgba(37,99,235,0.25)]">
                     ✦
                   </div>
 
-                  <p className="mt-5 text-xs font-medium uppercase tracking-[0.3em] text-blue-400">
-                    {project.category || "Project"}
-                  </p>
-
-                  <h3 className="mt-2 max-w-xl text-2xl font-bold tracking-tight text-white md:text-4xl">
-                    {project.title}
-                  </h3>
-
-                  <p className="mt-3 max-w-lg text-sm text-slate-500">
-                    Built from idea to deployment
-                  </p>
-
+                  <span className="mt-4 text-xs uppercase tracking-[0.25em] text-slate-600">
+                    Project {String(index + 1).padStart(2, "0")}
+                  </span>
                 </div>
-
-                {/* Top shine */}
-                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-400/40 to-transparent" />
-
-                {/* Bottom gradient */}
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent" />
-
               </div>
 
-              {/* CONTENT */}
-              <div className="p-6 md:p-8">
+              {/* Project Content */}
+              <div className="flex flex-col justify-center p-6 sm:p-8 md:p-10">
+                <p className="mb-3 text-xs font-semibold uppercase tracking-[0.25em] text-blue-400">
+                  Built & Shipped
+                </p>
 
-                <div className="flex items-start justify-between gap-4">
-
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.2em] text-blue-400">
-                      {project.category || "Project"}
-                    </p>
-
-                    <h3 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">
-                      {project.title}
-                    </h3>
-                  </div>
-
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-700/70 bg-slate-900/50 text-slate-400 transition group-hover:border-blue-400/40 group-hover:text-blue-300">
-                    ↗
-                  </div>
-
-                </div>
+                <h3 className="text-2xl font-bold tracking-tight text-white transition group-hover:text-blue-100 sm:text-3xl">
+                  {project.title}
+                </h3>
 
                 {project.description && (
-                  <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-400 md:text-base">
+                  <p className="mt-4 max-w-xl text-sm leading-7 text-slate-400 sm:text-base">
                     {project.description}
                   </p>
                 )}
 
                 <div className="mt-7 flex flex-wrap gap-3">
-
+                  {/* Live Project */}
                   <a
                     href={project.live_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-blue-100"
+                    className="inline-flex items-center justify-center rounded-xl border border-blue-400/30 bg-blue-600/15 px-5 py-3 text-sm font-semibold text-blue-200 transition hover:-translate-y-0.5 hover:border-blue-300/60 hover:bg-blue-600/25 hover:text-white hover:shadow-[0_0_30px_rgba(37,99,235,0.18)]"
                   >
-                    View Live ↗
+                    View Live
+                    <span className="ml-2">↗</span>
                   </a>
 
+                  {/* GitHub */}
                   {project.github_url && (
                     <a
                       href={project.github_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="rounded-xl border border-slate-700/80 bg-slate-900/40 px-5 py-2.5 text-sm font-medium text-slate-300 transition hover:border-blue-400/40 hover:text-white"
+                      className="inline-flex items-center justify-center rounded-xl border border-slate-700 bg-slate-900/40 px-5 py-3 text-sm font-medium text-slate-300 transition hover:-translate-y-0.5 hover:border-slate-500 hover:bg-slate-800/60 hover:text-white"
                     >
-                      GitHub ↗
+                      GitHub
+                      <span className="ml-2">↗</span>
                     </a>
                   )}
-
                 </div>
-
               </div>
-
-            </article>
-          ))}
-
-        </div>
-      ) : (
-        <div className="glass rounded-3xl p-16 text-center">
-
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-500/10 text-2xl text-blue-300">
-            ✦
-          </div>
-
-          <h3 className="mt-6 text-xl font-semibold">
-            No projects here
-          </h3>
-
-          <p className="mt-2 text-sm text-slate-500">
-            Try another category.
-          </p>
-
-        </div>
+            </div>
+          </article>
+        ))
       )}
-    </>
+    </div>
   );
 }

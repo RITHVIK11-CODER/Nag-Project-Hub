@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -9,7 +8,6 @@ export default function AddProjectForm() {
   const [description, setDescription] = useState("");
   const [liveUrl, setLiveUrl] = useState("");
   const [githubUrl, setGithubUrl] = useState("");
-  const [category, setCategory] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -17,18 +15,46 @@ export default function AddProjectForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
+    if (!title.trim()) {
+      setMessage("Please enter a project title.");
+      return;
+    }
+
+    if (!liveUrl.trim()) {
+      setMessage("Please enter the live project URL.");
+      return;
+    }
+
     setLoading(true);
     setMessage("");
 
     try {
+      // Automatically place new projects at the bottom.
+      const { data: lastProject, error: orderError } =
+        await supabaseBrowser
+          .from("projects")
+          .select("display_order")
+          .order("display_order", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+      if (orderError) {
+        throw new Error(orderError.message);
+      }
+
+      const nextOrder =
+        lastProject?.display_order != null
+          ? lastProject.display_order + 1
+          : 1;
+
       const { error } = await supabaseBrowser
         .from("projects")
         .insert({
-          title,
-          description: description || null,
-          live_url: liveUrl,
-          github_url: githubUrl || null,
-          category: category || null,
+          title: title.trim(),
+          description: description.trim() || null,
+          live_url: liveUrl.trim(),
+          github_url: githubUrl.trim() || null,
+          display_order: nextOrder,
           image_url: null,
         });
 
@@ -40,7 +66,6 @@ export default function AddProjectForm() {
       setDescription("");
       setLiveUrl("");
       setGithubUrl("");
-      setCategory("");
 
       setMessage("Project published successfully! 🎉");
 
@@ -59,136 +84,131 @@ export default function AddProjectForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <div className="glass rounded-3xl p-6 sm:p-8">
+      {/* Header */}
+      <div className="mb-8">
+        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-blue-400/20 bg-blue-500/10 text-xl">
+          ✦
+        </div>
 
-      {/* TITLE */}
-      <div>
-        <label className="mb-2 block text-sm font-medium text-slate-300">
-          Project Title
-        </label>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.25em] text-blue-400">
+          Project Management
+        </p>
 
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="e.g. Sreenidhians Hub"
-          required
-          className="admin-input"
-        />
-      </div>
+        <h2 className="text-2xl font-bold text-white sm:text-3xl">
+          Add a New Project
+        </h2>
 
-      {/* CATEGORY */}
-      <div>
-        <label className="mb-2 block text-sm font-medium text-slate-300">
-          Category
-        </label>
-
-        <input
-          type="text"
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          placeholder="e.g. Web App, AI, Hackathon"
-          className="admin-input"
-        />
-
-        <p className="mt-2 text-xs text-slate-600">
-          This automatically becomes a homepage filter.
+        <p className="mt-2 text-sm leading-6 text-slate-400">
+          Add your project details and publish it directly to your
+          Project Hub.
         </p>
       </div>
 
-      {/* DESCRIPTION */}
-      <div>
-        <label className="mb-2 block text-sm font-medium text-slate-300">
-          Description
-        </label>
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Title */}
+        <div>
+          <label className="mb-2 block text-sm font-medium text-slate-300">
+            Project Title
+          </label>
 
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="Briefly describe what you built..."
-          rows={5}
-          className="admin-input resize-none"
-        />
-      </div>
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="e.g. Sreenidhians Hub"
+            className="admin-input"
+            required
+          />
+        </div>
 
-      {/* LIVE URL */}
-      <div>
-        <label className="mb-2 block text-sm font-medium text-slate-300">
-          Live Website URL
-        </label>
+        {/* Description */}
+        <div>
+          <label className="mb-2 block text-sm font-medium text-slate-300">
+            Description
+          </label>
 
-        <input
-          type="url"
-          value={liveUrl}
-          onChange={(e) => setLiveUrl(e.target.value)}
-          placeholder="https://your-project.vercel.app"
-          required
-          className="admin-input"
-        />
-      </div>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Briefly describe what you built..."
+            rows={5}
+            className="admin-input resize-none"
+          />
+        </div>
 
-      {/* GITHUB */}
-      <div>
-        <label className="mb-2 block text-sm font-medium text-slate-300">
-          GitHub URL
-          <span className="ml-2 text-xs text-slate-600">
-            Optional
-          </span>
-        </label>
+        {/* Live URL */}
+        <div>
+          <label className="mb-2 block text-sm font-medium text-slate-300">
+            Live Project URL
+          </label>
 
-        <input
-          type="url"
-          value={githubUrl}
-          onChange={(e) => setGithubUrl(e.target.value)}
-          placeholder="https://github.com/username/project"
-          className="admin-input"
-        />
-      </div>
+          <input
+            type="url"
+            value={liveUrl}
+            onChange={(e) => setLiveUrl(e.target.value)}
+            placeholder="https://your-project.vercel.app"
+            className="admin-input"
+            required
+          />
+        </div>
 
-      {/* INFO */}
-      <div className="rounded-2xl border border-blue-400/10 bg-blue-500/5 px-4 py-4">
-        <div className="flex gap-3">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-blue-300">
-            ℹ
-          </div>
+        {/* GitHub URL */}
+        <div>
+          <label className="mb-2 block text-sm font-medium text-slate-300">
+            GitHub URL{" "}
+            <span className="text-slate-600">(optional)</span>
+          </label>
 
-          <div>
-            <p className="text-sm font-medium text-slate-300">
-              No image required
-            </p>
+          <input
+            type="url"
+            value={githubUrl}
+            onChange={(e) => setGithubUrl(e.target.value)}
+            placeholder="https://github.com/username/project"
+            className="admin-input"
+          />
+        </div>
 
-            <p className="mt-1 text-xs leading-5 text-slate-500">
-              Projects are published directly to your portfolio.
-              You can add screenshots later if needed.
-            </p>
+        {/* Image info */}
+        <div className="rounded-2xl border border-blue-400/10 bg-blue-500/5 p-4">
+          <div className="flex gap-3">
+            <span className="text-lg">💡</span>
+
+            <div>
+              <p className="text-sm font-medium text-blue-300">
+                No image required
+              </p>
+
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                Your project cards use the premium glass visual design,
+                so you can publish projects without uploading images.
+              </p>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* MESSAGE */}
-      {message && (
-        <div
-          className={`rounded-xl border px-4 py-3 text-sm ${
-            message.includes("successfully")
-              ? "border-blue-400/20 bg-blue-500/10 text-blue-300"
-              : "border-red-500/20 bg-red-500/10 text-red-300"
-          }`}
+        {/* Message */}
+        {message && (
+          <div
+            className={`rounded-xl border px-4 py-3 text-sm ${
+              message.includes("successfully")
+                ? "border-emerald-400/20 bg-emerald-500/10 text-emerald-300"
+                : "border-red-400/20 bg-red-500/10 text-red-300"
+            }`}
+          >
+            {message}
+          </div>
+        )}
+
+        {/* Submit */}
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full rounded-xl border border-blue-400/30 bg-blue-600/20 px-5 py-4 font-semibold text-blue-200 transition hover:-translate-y-0.5 hover:border-blue-300/60 hover:bg-blue-600/30 hover:text-white hover:shadow-[0_0_35px_rgba(37,99,235,0.2)] disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {message}
-        </div>
-      )}
-
-      {/* SUBMIT */}
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full rounded-xl bg-blue-500 px-5 py-4 text-sm font-semibold text-white shadow-[0_0_35px_rgba(59,130,246,0.18)] transition hover:bg-blue-400 hover:shadow-[0_0_55px_rgba(59,130,246,0.3)] disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {loading
-          ? "Publishing Project..."
-          : "Publish Project →"}
-      </button>
-
-    </form>
+          {loading ? "Publishing..." : "Publish Project →"}
+        </button>
+      </form>
+    </div>
   );
 }
