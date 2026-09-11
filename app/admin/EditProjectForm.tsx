@@ -13,7 +13,7 @@ type Project = {
   image_url: string | null;
 };
 
-type Props = {
+type EditProjectFormProps = {
   project: Project;
   onClose: () => void;
   onUpdated: (project: Project) => void;
@@ -23,7 +23,7 @@ export default function EditProjectForm({
   project,
   onClose,
   onUpdated,
-}: Props) {
+}: EditProjectFormProps) {
   const [title, setTitle] = useState(project.title);
   const [description, setDescription] = useState(
     project.description || ""
@@ -36,116 +36,117 @@ export default function EditProjectForm({
     project.category || ""
   );
 
-  const [image, setImage] = useState<File | null>(null);
-  const [currentImage, setCurrentImage] = useState(
-    project.image_url
-  );
+  const [saving, setSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const [loading, setLoading] = useState(false);
-
-  async function handleUpdate(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    setLoading(true);
+    setSaving(true);
+    setErrorMessage("");
 
-    let imageUrl = currentImage;
-
-    // Upload new image if selected
-    if (image) {
-      const fileExt = image.name.split(".").pop();
-      const fileName = `${crypto.randomUUID()}.${fileExt}`;
-
-      const { error: uploadError } =
-        await supabaseBrowser.storage
-          .from("project-images")
-          .upload(fileName, image);
-
-      if (uploadError) {
-        alert(
-          "Image upload failed: " +
-            uploadError.message
-        );
-
-        setLoading(false);
-        return;
-      }
-
-      const { data } = supabaseBrowser.storage
-        .from("project-images")
-        .getPublicUrl(fileName);
-
-      imageUrl = data.publicUrl;
-    }
+    const updatedProject = {
+      title,
+      description: description || null,
+      live_url: liveUrl,
+      github_url: githubUrl || null,
+      category: category || null,
+    };
 
     const { data, error } = await supabaseBrowser
       .from("projects")
-      .update({
-        title,
-        description,
-        live_url: liveUrl,
-        github_url: githubUrl || null,
-        category: category || null,
-        image_url: imageUrl,
-      })
+      .update(updatedProject)
       .eq("id", project.id)
       .select()
       .single();
 
-    setLoading(false);
-
     if (error) {
-      alert(
-        "Unable to update project: " +
-          error.message
-      );
+      setErrorMessage(error.message);
+      setSaving(false);
       return;
     }
 
-    onUpdated(data);
-    onClose();
+    if (data) {
+      onUpdated(data);
+    }
+
+    setSaving(false);
   }
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-6 z-50">
-      <div className="bg-gray-950 border border-gray-800 rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-[90] flex items-center justify-center overflow-y-auto bg-slate-950/75 px-4 py-6 backdrop-blur-md">
 
-        <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-semibold">
-            Edit Project
-          </h2>
+      {/* Modal */}
+      <div className="glass blue-glow relative w-full max-w-2xl rounded-3xl shadow-2xl">
 
+        {/* Header */}
+        <div className="flex items-start justify-between gap-4 border-b border-blue-400/10 p-6 sm:p-8">
+
+          <div>
+            <p className="text-xs font-medium uppercase tracking-[0.25em] text-blue-400">
+              Project Manager
+            </p>
+
+            <h2 className="mt-2 text-2xl font-bold tracking-tight text-white">
+              Edit Project
+            </h2>
+
+            <p className="mt-1 text-sm text-slate-500">
+              Update your project details.
+            </p>
+          </div>
+
+          {/* Close */}
           <button
+            type="button"
             onClick={onClose}
-            className="text-gray-400 hover:text-white"
+            disabled={saving}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-700/70 bg-slate-900/50 text-lg text-slate-400 transition hover:border-blue-400/30 hover:bg-blue-500/10 hover:text-white disabled:opacity-50"
           >
-            ✕
+            ×
           </button>
+
         </div>
 
+        {/* Form */}
         <form
-          onSubmit={handleUpdate}
-          className="mt-6 space-y-5"
+          onSubmit={handleSubmit}
+          className="space-y-5 p-6 sm:p-8"
         >
 
-          {/* Project Name */}
+          {/* Title */}
           <div>
-            <label className="block text-sm text-gray-300 mb-2">
-              Project Name
+            <label className="mb-2 block text-sm font-medium text-slate-300">
+              Project Title
             </label>
 
             <input
+              type="text"
               value={title}
-              onChange={(e) =>
-                setTitle(e.target.value)
-              }
+              onChange={(e) => setTitle(e.target.value)}
               required
-              className="w-full bg-black border border-gray-800 rounded-lg px-4 py-3"
+              className="admin-input"
+            />
+          </div>
+
+          {/* Category */}
+          <div>
+            <label className="mb-2 block text-sm font-medium text-slate-300">
+              Category
+            </label>
+
+            <input
+              type="text"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              placeholder="e.g. Web App, AI, Hackathon"
+              className="admin-input"
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-sm text-gray-300 mb-2">
+            <label className="mb-2 block text-sm font-medium text-slate-300">
               Description
             </label>
 
@@ -154,32 +155,33 @@ export default function EditProjectForm({
               onChange={(e) =>
                 setDescription(e.target.value)
               }
-              rows={4}
-              className="w-full bg-black border border-gray-800 rounded-lg px-4 py-3"
+              rows={5}
+              className="admin-input resize-none"
             />
           </div>
 
           {/* Live URL */}
           <div>
-            <label className="block text-sm text-gray-300 mb-2">
-              Live Project URL
+            <label className="mb-2 block text-sm font-medium text-slate-300">
+              Live Website URL
             </label>
 
             <input
               type="url"
               value={liveUrl}
-              onChange={(e) =>
-                setLiveUrl(e.target.value)
-              }
+              onChange={(e) => setLiveUrl(e.target.value)}
               required
-              className="w-full bg-black border border-gray-800 rounded-lg px-4 py-3"
+              className="admin-input"
             />
           </div>
 
           {/* GitHub */}
           <div>
-            <label className="block text-sm text-gray-300 mb-2">
+            <label className="mb-2 block text-sm font-medium text-slate-300">
               GitHub URL
+              <span className="ml-2 text-xs text-slate-600">
+                Optional
+              </span>
             </label>
 
             <input
@@ -188,88 +190,41 @@ export default function EditProjectForm({
               onChange={(e) =>
                 setGithubUrl(e.target.value)
               }
-              className="w-full bg-black border border-gray-800 rounded-lg px-4 py-3"
+              className="admin-input"
             />
           </div>
 
-          {/* Category */}
-          <div>
-            <label className="block text-sm text-gray-300 mb-2">
-              Category
-            </label>
-
-            <input
-              value={category}
-              onChange={(e) =>
-                setCategory(e.target.value)
-              }
-              className="w-full bg-black border border-gray-800 rounded-lg px-4 py-3"
-            />
-          </div>
-
-          {/* Current Image */}
-          {currentImage && (
-            <div>
-              <p className="text-sm text-gray-300 mb-2">
-                Current Screenshot
-              </p>
-
-              <img
-                src={currentImage}
-                alt={title}
-                className="w-full h-48 object-cover rounded-lg"
-              />
+          {/* Error */}
+          {errorMessage && (
+            <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+              {errorMessage}
             </div>
           )}
 
-          {/* New Image */}
-          <div>
-            <label className="block text-sm text-gray-300 mb-2">
-              Replace Screenshot
-            </label>
-
-            <input
-              type="file"
-              accept="image/png,image/jpeg,image/webp"
-              onChange={(e) =>
-                setImage(
-                  e.target.files?.[0] || null
-                )
-              }
-              className="w-full text-sm text-gray-400"
-            />
-
-            {image && (
-              <p className="text-sm text-gray-500 mt-2">
-                New image: {image.name}
-              </p>
-            )}
-          </div>
-
           {/* Buttons */}
-          <div className="flex gap-3">
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="bg-white text-black px-5 py-3 rounded-lg font-medium disabled:opacity-50"
-            >
-              {loading
-                ? "Saving..."
-                : "Save Changes"}
-            </button>
+          <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
 
             <button
               type="button"
               onClick={onClose}
-              className="border border-gray-700 px-5 py-3 rounded-lg"
+              disabled={saving}
+              className="rounded-xl border border-slate-700/80 bg-slate-900/50 px-5 py-3 text-sm font-medium text-slate-300 transition hover:border-slate-600 hover:text-white disabled:opacity-50"
             >
               Cancel
+            </button>
+
+            <button
+              type="submit"
+              disabled={saving}
+              className="rounded-xl bg-blue-500 px-6 py-3 text-sm font-semibold text-white shadow-[0_0_35px_rgba(59,130,246,0.2)] transition hover:bg-blue-400 hover:shadow-[0_0_55px_rgba(59,130,246,0.3)] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {saving ? "Saving Changes..." : "Save Changes →"}
             </button>
 
           </div>
 
         </form>
+
       </div>
     </div>
   );

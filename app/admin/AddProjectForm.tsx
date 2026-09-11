@@ -10,7 +10,6 @@ export default function AddProjectForm() {
   const [liveUrl, setLiveUrl] = useState("");
   const [githubUrl, setGithubUrl] = useState("");
   const [category, setCategory] = useState("");
-  const [image, setImage] = useState<File | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -22,39 +21,15 @@ export default function AddProjectForm() {
     setMessage("");
 
     try {
-      let imageUrl: string | null = null;
-
-      // Upload image
-      if (image) {
-        const fileExt = image.name.split(".").pop();
-        const fileName = `${crypto.randomUUID()}.${fileExt}`;
-
-        const { error: uploadError } =
-          await supabaseBrowser.storage
-            .from("project-images")
-            .upload(fileName, image);
-
-        if (uploadError) {
-          throw new Error(uploadError.message);
-        }
-
-        const { data } = supabaseBrowser.storage
-          .from("project-images")
-          .getPublicUrl(fileName);
-
-        imageUrl = data.publicUrl;
-      }
-
-      // Create project
       const { error } = await supabaseBrowser
         .from("projects")
         .insert({
           title,
-          description,
+          description: description || null,
           live_url: liveUrl,
           github_url: githubUrl || null,
           category: category || null,
-          image_url: imageUrl,
+          image_url: null,
         });
 
       if (error) {
@@ -66,17 +41,8 @@ export default function AddProjectForm() {
       setLiveUrl("");
       setGithubUrl("");
       setCategory("");
-      setImage(null);
 
-      const fileInput = document.getElementById(
-        "project-image"
-      ) as HTMLInputElement | null;
-
-      if (fileInput) {
-        fileInput.value = "";
-      }
-
-      setMessage("Project added successfully! 🎉");
+      setMessage("Project published successfully! 🎉");
 
       setTimeout(() => {
         window.location.reload();
@@ -93,10 +59,7 @@ export default function AddProjectForm() {
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="space-y-6"
-    >
+    <form onSubmit={handleSubmit} className="space-y-6">
 
       {/* TITLE */}
       <div>
@@ -129,7 +92,7 @@ export default function AddProjectForm() {
         />
 
         <p className="mt-2 text-xs text-slate-600">
-          This will automatically become a homepage filter.
+          This automatically becomes a homepage filter.
         </p>
       </div>
 
@@ -182,40 +145,24 @@ export default function AddProjectForm() {
         />
       </div>
 
-      {/* IMAGE */}
-      <div>
-        <label className="mb-2 block text-sm font-medium text-slate-300">
-          Project Screenshot
-        </label>
-
-        <label
-          htmlFor="project-image"
-          className="flex min-h-36 cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-blue-400/25 bg-blue-500/5 px-5 text-center transition hover:border-blue-400/50 hover:bg-blue-500/10"
-        >
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10 text-2xl text-blue-300">
-            ↑
+      {/* INFO */}
+      <div className="rounded-2xl border border-blue-400/10 bg-blue-500/5 px-4 py-4">
+        <div className="flex gap-3">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-blue-300">
+            ℹ
           </div>
 
-          <p className="mt-3 text-sm font-medium text-slate-300">
-            {image
-              ? image.name
-              : "Tap to choose project screenshot"}
-          </p>
+          <div>
+            <p className="text-sm font-medium text-slate-300">
+              No image required
+            </p>
 
-          <p className="mt-1 text-xs text-slate-600">
-            JPG, PNG or WebP
-          </p>
-        </label>
-
-        <input
-          id="project-image"
-          type="file"
-          accept="image/png,image/jpeg,image/webp"
-          onChange={(e) =>
-            setImage(e.target.files?.[0] || null)
-          }
-          className="hidden"
-        />
+            <p className="mt-1 text-xs leading-5 text-slate-500">
+              Projects are published directly to your portfolio.
+              You can add screenshots later if needed.
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* MESSAGE */}
@@ -237,7 +184,9 @@ export default function AddProjectForm() {
         disabled={loading}
         className="w-full rounded-xl bg-blue-500 px-5 py-4 text-sm font-semibold text-white shadow-[0_0_35px_rgba(59,130,246,0.18)] transition hover:bg-blue-400 hover:shadow-[0_0_55px_rgba(59,130,246,0.3)] disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {loading ? "Uploading Project..." : "Publish Project →"}
+        {loading
+          ? "Publishing Project..."
+          : "Publish Project →"}
       </button>
 
     </form>
